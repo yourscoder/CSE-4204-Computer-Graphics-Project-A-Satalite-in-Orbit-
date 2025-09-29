@@ -26,3 +26,22 @@ const sun = new THREE.DirectionalLight(0xfff6e6, 1.2);
 sun.position.set(10, 6, 8);
 sun.castShadow = false;
 scene.add(sun);
+
+const backLight = new THREE.DirectionalLight(0x99ccff, 0.15);
+backLight.position.set(-6, -4, -8);
+scene.add(backLight);
+
+
+function makeStarfield(count = 1000, spread=120) {
+  const pts = new Float32Array(count * 3);
+  for (let i=0; i<count*3; i++) {
+    pts[i] = (Math.random() - 0.5) * spread;
+ 
+    if (Math.random() > 0.8) pts[i] *= 2.5;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.7, sizeAttenuation: true, transparent: true });
+  mat.color = new THREE.Color(0xffffff);
+  mat.depthWrite = false;
+  return new THREE.Points(g, mat);
