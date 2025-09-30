@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>A Satellite in Orbit — CSE4204</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    html,body { height:100%; margin:0; background:#000; font-family: Arial, Helvetica, sans-serif; }
+    #canvas-container { width:100vw; height:100vh; overflow:hidden; position:relative; }
+    #hud {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      color: #dfefff;
+      background: rgba(2,10,20,0.45);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+    }
+    #credit {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      color: #9fbefc;
+      background: rgba(2,10,20,0.25);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size:12px;
+    }
+    a { color: #d0e8ff; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <div id="hud">
+    <strong>Satellite in Orbit</strong><br>
+    Click the satellite → cycle textures (metal / solar / camo).<br>
+    Move camera: <em>W/A/S/D</em> or <em>Arrow keys</em> (rotate/tilt).<br>
+    Zoom: <em>+</em> / <em>-</em>. Reset: <em>Space</em>.<br>
+    
+  </div>
+
+  <div id="credit">features: custom shader (atmosphere), lighting, textures & controls</div>
+
+  
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
