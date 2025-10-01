@@ -130,3 +130,54 @@ function createEarthCanvasTexture(size=1024) {
 
   return new THREE.CanvasTexture(c);
 }
+
+
+const earthTexture = createEarthCanvasTexture(1024);
+earthTexture.needsUpdate = true;
+
+const earthMat = new THREE.MeshPhongMaterial({
+  map: earthTexture,
+  shininess: 8,
+  specular: new THREE.Color(0x222222)
+});
+const earth = new THREE.Mesh(earthGeo, earthMat);
+earth.rotation.y = 0.5;
+scene.add(earth);
+
+
+const atmMaterial = new THREE.ShaderMaterial({
+  vertexShader: atmosphereVertexShader,
+  fragmentShader: atmosphereFragmentShader,
+  uniforms: {
+    glowColor: { value: new THREE.Color(0x66b3ff) }
+  },
+  transparent: true,
+  blending: THREE.AdditiveBlending,
+  side: THREE.BackSide,
+  depthWrite: false
+});
+const atm = new THREE.Mesh(
+  new THREE.SphereGeometry(EARTH_RADIUS * 1.04, 64, 64),
+  atmMaterial
+);
+scene.add(atm);
+
+
+const satelliteGroup = new THREE.Group();
+
+// satellite body
+const bodyGeo = new THREE.BoxGeometry(0.6, 0.45, 0.45);
+const satMaterial = new THREE.MeshStandardMaterial({ metalness: 0.6, roughness: 0.4 });
+const satBody = new THREE.Mesh(bodyGeo, satMaterial);
+satBody.castShadow = true;
+satBody.receiveShadow = true;
+satelliteGroup.add(satBody);
+
+const cyl = new THREE.CylinderGeometry(0.02, 0.02, 0.9, 10);
+const antenna = new THREE.Mesh(cyl, new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.2 }));
+antenna.rotation.z = 1.2;
+antenna.position.set(0.55, 0.0, 0.0);
+satelliteGroup.add(antenna);
+
+
+
