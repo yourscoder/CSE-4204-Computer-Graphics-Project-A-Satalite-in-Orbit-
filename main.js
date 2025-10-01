@@ -173,11 +173,78 @@ satBody.castShadow = true;
 satBody.receiveShadow = true;
 satelliteGroup.add(satBody);
 
-const cyl = new THREE.CylinderGeometry(0.02, 0.02, 0.9, 10);
+// simple antenna/cylinder
+/*const cyl = new THREE.CylinderGeometry(0.02, 0.02, 0.9, 10);
 const antenna = new THREE.Mesh(cyl, new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.2 }));
 antenna.rotation.z = 1.2;
 antenna.position.set(0.55, 0.0, 0.0);
-satelliteGroup.add(antenna);
+satelliteGroup.add(antenna);*/   
+
+// solar panels (two rectangular boxes)
+function makeSolarPanel(w = 1.0, h = 0.46) {
+  const g = new THREE.BoxGeometry(w, h, 0.04);
+  const m = new THREE.MeshStandardMaterial({ metalness: 0.2, roughness: 0.3 });
+  const mesh = new THREE.Mesh(g, m);
+  return mesh;
+}
+const leftPanel = makeSolarPanel(1.2);
+leftPanel.position.set(-0.9, 0.0, 0.0);
+leftPanel.rotation.y = 0.02;
+satelliteGroup.add(leftPanel);
+
+const rightPanel = makeSolarPanel(1.2);
+rightPanel.position.set(0.9, 0.0, 0.0);
+satelliteGroup.add(rightPanel);
+
+
+function createSatelliteTextures(size = 512) {
+  const list = [];
+
+  // 1) metal brushed texture
+  const c1 = document.createElement('canvas'); c1.width = c1.height = size;
+  const ctx1 = c1.getContext('2d');
+  // base
+  ctx1.fillStyle = '#a6a6a6';
+  ctx1.fillRect(0,0,size,size);
+  // brushed lines
+  ctx1.globalAlpha = 0.06;
+  for (let i=0;i<200;i++){
+    ctx1.fillStyle = `rgba(255,255,255,${0.02+Math.random()*0.02})`;
+    const y = Math.random()*size;
+    ctx1.fillRect(0,y, size, 1);
+  }
+  ctx1.globalAlpha = 1.0;
+  // thin stripes
+  ctx1.fillStyle = 'rgba(40,40,40,0.08)';
+  ctx1.fillRect(0,size*0.66, size, size*0.08);
+
+  list.push(new THREE.CanvasTexture(c1));
+
+  // 2) solar-panel style (grid)
+  const c2 = document.createElement('canvas'); c2.width = c2.height = size;
+  const ctx2 = c2.getContext('2d');
+  ctx2.fillStyle = '#052a4a';
+  ctx2.fillRect(0,0,size,size);
+  ctx2.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx2.lineWidth = 3;
+  // vertical grid
+  const cols = 8, rows = 5;
+  const cw = size/cols, ch = size/rows;
+  ctx2.globalAlpha = 0.7;
+  for (let i=1;i<cols;i++) {
+    ctx2.beginPath();
+    ctx2.moveTo(i*cw,0);
+    ctx2.lineTo(i*cw,size);
+    ctx2.stroke();
+  }
+  for (let j=1;j<rows;j++) {
+    ctx2.beginPath();
+    ctx2.moveTo(0,j*ch);
+    ctx2.lineTo(size,j*ch);
+    ctx2.stroke();
+  }
+
+
 
 
 
