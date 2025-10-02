@@ -242,7 +242,181 @@ function createSatelliteTextures(size = 512) {
     ctx2.moveTo(0,j*ch);
     ctx2.lineTo(size,j*ch);
     ctx2.stroke();
+  } 
+
+  
+
+
+  // small lighter sheen squares
+  for (let i=0;i<cols;i++){
+    for (let j=0;j<rows;j++){
+      if (Math.random() > 0.85) {
+        ctx2.fillStyle = 'rgba(90,150,220,0.06)';
+        ctx2.fillRect(i*cw + 6, j*ch + 6, cw - 12, ch - 12);
+      }
+    }
   }
+  ctx2.globalAlpha = 1.0;
+  list.push(new THREE.CanvasTexture(c2));
+
+  // 3) colored pattern
+  const c3 = document.createElement('canvas'); c3.width = c3.height = size;
+  const ctx3 = c3.getContext('2d');
+  ctx3.fillStyle = '#7d6a3d';
+  ctx3.fillRect(0,0,size,size);
+  const patches = ['#6e8b3d','#525b2d','#a37b4c','#3a3a2f'];
+  for (let i=0;i<40;i++){
+    ctx3.fillStyle = patches[Math.floor(Math.random()*patches.length)];
+    ctx3.beginPath();
+    ctx3.ellipse(Math.random()*size, Math.random()*size, size*0.08 + Math.random()*size*0.06, size*0.04 + Math.random()*size*0.06, Math.random()*Math.PI, 0, Math.PI*2);
+    ctx3.fill();
+  }
+  list.push(new THREE.CanvasTexture(c3));
+
+  list.forEach(t => { t.encoding = THREE.sRGBEncoding; t.needsUpdate = true; });
+  return list;
+}
+const satTextures = createSatelliteTextures(1024);
+let satTextureIndex = 0;
+satMaterial.map = satTextures[satTextureIndex];
+satMaterial.needsUpdate = true;
+
+
+const panelMatLeft = satelliteGroup.children.find(c => c === leftPanel).material;
+panelMatLeft.map = createSolarPanelTexture(512);
+panelMatLeft.needsUpdate = true;
+const panelMatRight = satelliteGroup.children.find(c => c === rightPanel).material;
+panelMatRight.map = createSolarPanelTexture(512);
+panelMatRight.needsUpdate = true;
+
+
+function createSolarPanelTexture(size=512) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#052a4a';
+  ctx.fillRect(0,0,size,size);
+  ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+  ctx.lineWidth = 4;
+  for (let i=0;i<8;i++){
+    ctx.beginPath();
+    ctx.moveTo((i+1)*(size/9), 0);
+    ctx.lineTo((i+1)*(size/9), size);
+    ctx.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+// ---------- Orbit pivot ----------
+const orbitPivot = new THREE.Object3D();
+scene.add(orbitPivot);
+
+// place satellite at orbit radius
+const ORBIT_RADIUS = 5.5;
+satelliteGroup.position.set(ORBIT_RADIUS, 0.0, 0.0);
+orbitPivot.add(satelliteGroup);
+
+
+orbitPivot.rotation.x = 0.12;
+
+
+let camSpherical = { radius: 8.5, theta: 1.0, phi: 0.6 }; // spherical coords around satellite
+function updateCamera() {
+
+  const satWorld = new THREE.Vector3();
+  satelliteGroup.getWorldPosition(satWorld);
+
+ 
+  const r = camSpherical.radius;
+  const x = satWorld.x + r * Math.cos(camSpherical.phi) * Math.sin(camSpherical.theta);
+  const y = satWorld.y + r * Math.sin(camSpherical.phi);
+  const z = satWorld.z + r * Math.cos(camSpherical.phi) * Math.cos(camSpherical.theta);
+
+  camera.position.set(x,y,z);
+  camera.lookAt(satWorld);
+}
+updateCamera();
+
+const keys = {};
+window.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
+window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+function handleKeys(delta) {
+  const rotSpeed = 0.9 * delta;
+  const zoomSpeed = 4.0 * delta;
+
+  if (keys['a'] || keys['arrowleft']) camSpherical.theta -= rotSpeed;
+  if (keys['d'] || keys['arrowright']) camSpherical.theta += rotSpeed;
+  if (keys['w'] || keys['arrowup']) camSpherical.phi = Math.max(-Math.PI/2 + 0.05, camSpherical.phi - rotSpeed);
+  if (keys['s'] || keys['arrowdown']) camSpherical.phi = Math.min(Math.PI/2 - 0.05, camSpherical.phi + rotSpeed);
+
+  if (keys['+'] || keys['=']) camSpherical.radius = Math.max(2.2, camSpherical.radius - zoomSpeed * 0.1);
+  if (keys['-'] || keys['_']) camSpherical.radius = Math.min(40, camSpherical.radius + zoomSpeed * 0.1);
+
+  if (keys[' ']) { 
+    camSpherical = { radius: 8.5, theta: 1.0, phi: 0.6 };
+  }
+}
+
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// click handler
+renderer.domElement.addEventListener('pointerdown', (ev) => {
+  
+  mouse.x = (ev.clientX / renderer.domElement.clientWidth) * 2 - 1;
+  mouse.y = - (ev.clientY / renderer.domElement.clientHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  
+  const intersects = raycaster.intersectObject(satBody, true);
+  if (intersects.length > 0) {
+    
+    satTextureIndex = (satTextureIndex + 1) % satTextures.length;
+    satMaterial.map = satTextures[satTextureIndex];
+    satMaterial.needsUpdate = true;
+  }
+}, false);
+
+// Animation
+let lastTime = performance.now() / 1000;
+let orbitSpeed = 0.25; // radians per second
+function animate() {
+  requestAnimationFrame(animate);
+  const t = performance.now() / 1000;
+  const dt = Math.min(0.05, t - lastTime); 
+  lastTime = t;
+
+  // keyboard camera
+  handleKeys(dt);
+  updateCamera();
+
+  orbitPivot.rotation.y += orbitSpeed * dt;
+
+
+  satelliteGroup.rotation.y += 1.2 * dt;
+
+ 
+  satelliteGroup.rotation.x = Math.sin(t * 0.4) * 0.08;
+
+
+  earth.rotation.y += 0.02 * dt;
+
+  renderer.render(scene, camera);
+}
+animate();
+
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+
+
+
+  
 
 
 
